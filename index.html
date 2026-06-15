@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice Generator</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: #fff;
+        padding: 24px;
+    }
+    .card {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        padding: 48px 40px;
+        max-width: 480px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    }
+    .icon {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 24px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 34px;
+    }
+    h1 { font-size: 26px; margin-bottom: 12px; font-weight: 700; }
+    p { font-size: 14px; line-height: 1.7; color: rgba(255, 255, 255, 0.85); margin-bottom: 28px; }
+    .features {
+        text-align: left;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 32px;
+        display: grid;
+        gap: 10px;
+    }
+    .features div { display: flex; align-items: center; gap: 10px; }
+    .features .dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; flex-shrink: 0; }
+    .btn {
+        display: inline-block;
+        background: #fff;
+        color: #4f46e5;
+        text-decoration: none;
+        padding: 14px 40px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 700;
+        transition: transform .15s, box-shadow .15s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); }
+    .foot { margin-top: 28px; font-size: 11px; color: rgba(255, 255, 255, 0.55); }
+</style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">🧾</div>
+        <h1>Invoice Generator</h1>
+        <p>快速生成 Proforma / Commercial Invoice 和 Packing List，支持 Logo、产品图、自动模板和打印导出 PDF。</p>
+
+        <div class="features">
+            <div><span class="dot"></span>发件人 / 收件人信息浏览器自动记忆</div>
+            <div><span class="dot"></span>产品下拉选择，自动填充描述模板</div>
+            <div><span class="dot"></span>上传 Logo 与产品图片</div>
+            <div><span class="dot"></span>一键打印或保存为 PDF</div>
+        </div>
+
+        <a class="btn" href="invoice.html">开始制作发票 →</a>
+
+        <div class="foot">Powered by Invoice Generator</div>
+    </div>
+</body>
+</html>
