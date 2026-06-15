@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice Generator</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f6f8; color: #333; line-height: 1.6; }
+    .app { display: grid; grid-template-columns: 420px 1fr; min-height: 100vh; }
+
+    /* ---------- Form panel ---------- */
+    .form-panel { background: #fff; border-right: 1px solid #e5e7eb; padding: 24px; overflow-y: auto; height: 100vh; }
+    .form-panel h1 { font-size: 18px; margin-bottom: 20px; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; }
+    .field input, .field select, .field textarea {
+        width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: inherit;
+    }
+    .field textarea { resize: vertical; min-height: 60px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #888; margin: 22px 0 10px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+
+    .item-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 12px; position: relative; }
+    .item-card .remove-item { position: absolute; top: 8px; right: 8px; background: #fee2e2; color: #dc2626; border: none; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; font-size: 14px; }
+
+    .btn { display: inline-block; padding: 10px 16px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-add { background: #eef2ff; color: #4f46e5; width: 100%; }
+    .btn-primary { background: #4f46e5; color: #fff; width: 100%; margin-top: 16px; }
+    .btn:hover { opacity: .9; }
+
+    /* ---------- Preview panel ---------- */
+    .preview-panel { padding: 30px; overflow-y: auto; height: 100vh; }
+    #invoicePreview {
+        background: #fff; max-width: 800px; margin: 0 auto; padding: 40px; border-radius: 8px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.08); font-size: 12px; line-height: 1.6; color: #333;
+    }
+
+    /* invoice content — 上下结构 */
+    .inv-header { display: block; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #333; }
+    .inv-logo-title { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .inv-logo img { max-height: 70px; max-width: 200px; object-fit: contain; }
+    .invoice-title { font-size: 22px; font-weight: 700; color: #333; }
+    .invoice-meta { font-size: 11px; color: #555; line-height: 2; text-align: left; }
+    .addresses { display: block; margin-bottom: 24px; }
+    .addresses > div { margin-bottom: 16px; }
+    .addr-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #888; margin-bottom: 4px; }
+    .addr-body { font-size: 12px; line-height: 1.6; }
+
+    .items-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 16px 0; font-size: 11px; }
+    .items-table th { background: #f0f0f0; border-bottom: 2px solid #333; padding: 7px 6px; text-align: left; font-weight: 700; word-break: break-word; }
+    .items-table th.num, .items-table td.num { text-align: right; }
+    .items-table td { padding: 6px 6px; border-bottom: 1px solid #eee; vertical-align: top; word-break: break-word; overflow-wrap: break-word; }
+    .items-table img { max-width: 100%; max-height: 48px; object-fit: contain; }
+
+    .totals { display: flex; justify-content: flex-end; margin: 6px 0; font-size: 12px; }
+    .totals span:first-child { margin-right: 24px; }
+    .totals.grand { font-size: 14px; font-weight: 700; border-top: 1px solid #333; padding-top: 6px; }
+
+    .inv-notes, .inv-cert { font-size: 11px; color: #555; margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee; }
+    .inv-foot { font-size: 10px; color: #bbb; text-align: center; margin-top: 20px; }
+
+    /* notification */
+    #notif { position: fixed; bottom: 24px; right: 24px; background: #111827; color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 13px; opacity: 0; transform: translateY(10px); transition: .3s; pointer-events: none; }
+    #notif.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+    <!-- ============ FORM ============ -->
+    <div class="form-panel">
+        <h1>Invoice Generator</h1>
+
+        <div class="field">
+            <label>Invoice Type</label>
+            <select id="invoiceType">
+                <option value="proforma">Proforma Invoice</option>
+                <option value="commercial">Commercial Invoice</option>
+                <option value="packing">Packing List</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Logo</label>
+            <input type="file" id="logoInput" accept="image/*">
+        </div>
+
+        <div class="row2">
+            <div class="field"><label>Invoice #</label><input id="invoiceNo" value="INV-001"></div>
+            <div class="field"><label>Date</label><input type="date" id="invoiceDate"></div>
+        </div>
+        <div class="row2">
+            <div class="field"><label>Export Type</label>
+                <select id="exportType"><option>Permanent</option><option>Temporary</option></select>
+            </div>
+            <div class="field"><label>Incoterm</label>
+                <select id="incoterm"><option>EXW</option><option>FOB</option><option>CIF</option><option>DDP</option><option>DAP</option></select>
+            </div>
+        </div>
+        <div class="field">
+            <label>Currency</label>
+            <select id="currency"><option>USD</option><option>EUR</option><option>CNY</option><option>GBP</option><option>JPY</option></select>
+        </div>
+
+        <!-- FROM -->
+        <div class="section-title">From (Sender)</div>
+        <div class="field"><label>Company</label><input id="fromCompany"></div>
+        <div class="field"><label>Name</label><input id="fromName"></div>
+        <div class="field"><label>Address</label><input id="fromAddress"></div>
+        <div class="row2">
+            <div class="field"><label>City</label><input id="fromCity"></div>
+            <div class="field"><label>ZIP</label><input id="fromZip"></div>
+        </div>
+        <div class="field"><label>Country</label><input id="fromCountry"></div>
+        <div class="row2">
+            <div class="field"><label>Email</label><input id="fromEmail"></div>
+            <div class="field"><label>Phone</label><input id="fromPhone"></div>
+        </div>
+
+        <!-- RECEIVER -->
+        <div class="section-title">Receiver</div>
+        <div class="field"><label>Company</label><input id="toCompany"></div>
+        <div class="field"><label>Name</label><input id="toName"></div>
+        <div class="field"><label>Address</label><input id="toAddress"></div>
+        <div class="row2">
+            <div class="field"><label>City</label><input id="toCity"></div>
+            <div class="field"><label>ZIP</label><input id="toZip"></div>
+        </div>
+        <div class="field"><label>Country</label><input id="toCountry"></div>
+        <div class="row2">
+            <div class="field"><label>Email</label><input id="toEmail"></div>
+            <div class="field"><label>Phone</label><input id="toPhone"></div>
+        </div>
+
+        <!-- ITEMS -->
+        <div class="section-title">Items</div>
+        <div id="itemsContainer"></div>
+        <button class="btn btn-add" onclick="addItem()">+ Add Item</button>
+
+        <!-- NOTES -->
+        <div class="section-title">Notes</div>
+        <div class="field"><textarea id="notes" placeholder="Payment terms, bank details, etc."></textarea></div>
+
+        <button class="btn btn-primary" onclick="printInvoice()">Print / Save as PDF</button>
+    </div>
+
+    <!-- ============ PREVIEW ============ -->
+    <div class="preview-panel">
+        <div id="invoicePreview"></div>
+    </div>
+</div>
+
+<div id="notif"></div>
+
+<script>
+    let logoData = '';
+
+    /* ---------- Items ---------- */
+    function addItem(values = {}) {
+        const c = document.getElementById('itemsContainer');
+        const card = document.createElement('div');
+        card.className = 'item-card';
+        card._designData = values.design || '';
+        card.innerHTML = `
+            <button class="remove-item" onclick="this.parentElement.remove(); render();">×</button>
+            <div class="field"><label>Product</label><input class="i-product" value="${values.product || ''}"></div>
+            <div class="field"><label>Description</label><textarea class="i-desc">${values.desc || ''}</textarea></div>
+            <div class="field">
+                <label>Design (image)</label>
+                <input type="file" class="i-design-file" accept="image/*">
+                <img class="i-design-preview" style="max-height:50px;margin-top:6px;display:${values.design ? 'block' : 'none'};border:1px solid #e5e7eb;border-radius:4px;" src="${values.design || ''}">
+            </div>
+            <div class="row2">
+                <div class="field"><label>QTY</label><input type="number" class="i-qty" value="${values.qty || 1}" min="0"></div>
+                <div class="field"><label>Unit Price</label><input type="number" class="i-price" value="${values.price || 0}" min="0" step="0.01"></div>
+            </div>
+        `;
+        card.querySelectorAll('input:not(.i-design-file), textarea').forEach(el => el.addEventListener('input', render));
+        card.querySelector('.i-design-file').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                card._designData = ev.target.result;
+                const prev = card.querySelector('.i-design-preview');
+                prev.src = ev.target.result;
+                prev.style.display = 'block';
+                render();
+            };
+            reader.readAsDataURL(file);
+        });
+        c.appendChild(card);
+        render();
+    }
+
+    /* ---------- Collect form data ---------- */
+    function collectData() {
+        const v = id => (document.getElementById(id)?.value || '').trim();
+        const items = [...document.querySelectorAll('.item-card')].map((card, idx) => {
+            const qty = parseFloat(card.querySelector('.i-qty').value) || 0;
+            const price = parseFloat(card.querySelector('.i-price').value) || 0;
+            return {
+                num: idx + 1,
+                product: card.querySelector('.i-product').value,
+                desc: card.querySelector('.i-desc').value,
+                design: card._designData || '',
+                qty, price, total: qty * price
+            };
+        });
+        return {
+            type: v('invoiceType'),
+            logo: logoData,
+            no: v('invoiceNo'),
+            date: v('invoiceDate'),
+            exportType: v('exportType'),
+            incoterm: v('incoterm'),
+            currency: v('currency'),
+            from: { company: v('fromCompany'), name: v('fromName'), address: v('fromAddress'), city: v('fromCity'), zip: v('fromZip'), country: v('fromCountry'), email: v('fromEmail'), phone: v('fromPhone') },
+            to: { company: v('toCompany'), name: v('toName'), address: v('toAddress'), city: v('toCity'), zip: v('toZip'), country: v('toCountry'), email: v('toEmail'), phone: v('toPhone') },
+            items,
+            notes: v('notes')
+        };
+    }
+
+    function addrBlock(a) {
+        return [
+            a.company ? `<strong>${a.company}</strong>` : '',
+            a.name, a.address,
+            [a.city, a.zip].filter(Boolean).join(', '),
+            a.country,
+            a.email ? `Email: ${a.email}` : '',
+            a.phone ? `Tel: ${a.phone}` : ''
+        ].filter(Boolean).join('<br>');
+    }
+
+    /* ---------- Build invoice HTML (上下结构) ---------- */
+    function buildInvoiceHTML(d) {
+        const cur = d.currency;
+        const typeLabel = { proforma: 'Proforma Invoice', commercial: 'Commercial Invoice', packing: 'Packing List' }[d.type] || 'Invoice';
+        const subtotal = d.items.reduce((s, i) => s + i.total, 0).toFixed(2);
+
+        const rows = d.items.map(i => `
+            <tr>
+                <td>${i.num}</td>
+                <td>${i.product}</td>
+                <td>${i.design ? `<img src="${i.design}">` : ''}</td>
+                <td style="white-space:pre-wrap;">${i.desc}</td>
+                <td class="num">${i.qty}</td>
+                <td class="num">${cur} ${i.price.toFixed(2)}</td>
+                <td class="num">${cur} ${i.total.toFixed(2)}</td>
+            </tr>`).join('');
+
+        return `
+<div class="inv-header">
+    <div class="inv-logo-title">
+        ${d.logo ? `<div class="inv-logo"><img src="${d.logo}" alt="Logo"></div>` : ''}
+        <div class="invoice-title">${typeLabel}</div>
+    </div>
+    <div class="invoice-meta">
+        <strong>Invoice #:</strong> ${d.no}<br>
+        <strong>Date:</strong> ${d.date || new Date().toISOString().split('T')[0]}<br>
+        <strong>Export:</strong> ${d.exportType}<br>
+        <strong>Incoterm:</strong> ${d.incoterm}
+    </div>
+</div>
+
+<div class="addresses">
+    <div>
+        <div class="addr-label">FROM</div>
+        <div class="addr-body">${addrBlock(d.from) || '—'}</div>
+    </div>
+    <div>
+        <div class="addr-label">RECEIVER</div>
+        <div class="addr-body">${addrBlock(d.to) || '—'}</div>
+    </div>
+</div>
+
+<table class="items-table">
+    <colgroup>
+        <col style="width:5%;">
+        <col style="width:18%;">
+        <col style="width:14%;">
+        <col style="width:26%;">
+        <col style="width:10%;">
+        <col style="width:13%;">
+        <col style="width:14%;">
+    </colgroup>
+    <thead>
+        <tr>
+            <th>#</th><th>Product</th><th>Design</th><th>Description</th>
+            <th class="num">QTY</th><th class="num">Unit Price</th><th class="num">Amount</th>
+        </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+</table>
+
+<div class="totals"><span>Subtotal:</span><span>${cur} ${subtotal}</span></div>
+<div class="totals grand"><span>Total:</span><span>${cur} ${subtotal}</span></div>
+
+${d.notes ? `<div class="inv-notes">${d.notes}</div>` : ''}
+<div class="inv-cert">I/We hereby certify that the information of this invoice is true and correct and that the contents of this shipment are as stated above.</div>
+<div class="inv-foot">Powered by Invoice Generator</div>
+`;
+    }
+
+    /* ---------- Render preview ---------- */
+    function render() {
+        const data = collectData();
+        document.getElementById('invoicePreview').innerHTML = buildInvoiceHTML(data);
+    }
+
+    /* ---------- Print invoice ---------- */
+    function printInvoice() {
+        const data = collectData();
+        const invoiceHTML = buildInvoiceHTML(data);
+
+        const printStyles = `
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, "PingFang SC", "Microsoft YaHei", sans-serif; color: #333; line-height: 1.6; font-size: 12px; padding: 24px; }
+            .inv-header { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #333; }
+            .inv-logo-title { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+            .inv-logo img { max-height: 70px; max-width: 200px; object-fit: contain; }
+            .invoice-title { font-size: 22px; font-weight: 700; color: #333; }
+            .invoice-meta { font-size: 11px; color: #555; line-height: 2; }
+            .addresses { margin-bottom: 24px; }
+            .addresses > div { margin-bottom: 16px; }
+            .addr-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #888; margin-bottom: 4px; }
+            .addr-body { font-size: 12px; line-height: 1.6; }
+            .items-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 16px 0; font-size: 10px; }
+            .items-table th { background: #f0f0f0; border-bottom: 2px solid #333; padding: 7px 6px; text-align: left; font-weight: 700; word-break: break-word; }
+            .items-table th.num, .items-table td.num { text-align: right; }
+            .items-table td { padding: 6px 6px; border-bottom: 1px solid #eee; vertical-align: top; word-break: break-word; overflow-wrap: break-word; }
+            .items-table img { max-width: 100%; max-height: 48px; object-fit: contain; }
+            .totals { display: flex; justify-content: flex-end; margin: 6px 0; font-size: 12px; }
+            .totals span:first-child { margin-right: 24px; }
+            .totals.grand { font-size: 14px; font-weight: 700; border-top: 1px solid #333; padding-top: 6px; }
+            .inv-notes, .inv-cert { font-size: 11px; color: #555; margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee; }
+            .inv-foot { font-size: 10px; color: #bbb; text-align: center; margin-top: 20px; }
+            @media print {
+                body { padding: 0; }
+                .items-table { page-break-inside: auto; }
+                tr { page-break-inside: avoid; }
+                thead { display: table-header-group; }
+            }
+            @page { size: A4 portrait; margin: 12mm; }
+        `;
+
+        const win = window.open('', '_blank');
+        if (!win) {
+            showNotification('请允许弹出窗口以使用打印功能');
+            return;
+        }
+
+        win.document.write(`
+            <!DOCTYPE html>
+            <html lang="zh">
+            <head>
+                <meta charset="UTF-8">
+                <title>Invoice ${data.no}</title>
+                <style>${printStyles}</style>
+            </head>
+            <body>${invoiceHTML}</body>
+            </html>
+        `);
+        win.document.close();
+
+        const imgs = [...win.document.images];
+        const waitImgs = imgs.map(img => img.complete ? Promise.resolve()
+            : new Promise(res => { img.onload = img.onerror = res; }));
+
+        Promise.all(waitImgs).then(() => {
+            win.focus();
+            win.print();
+            win.onafterprint = () => win.close();
+            setTimeout(() => { if (!win.closed) win.close(); }, 60000);
+        });
+
+        showNotification('Opening print dialog...');
+    }
+
+    /* ---------- Notification ---------- */
+    function showNotification(msg) {
+        const n = document.getElementById('notif');
+        n.textContent = msg;
+        n.classList.add('show');
+        setTimeout(() => n.classList.remove('show'), 2500);
+    }
+
+    /* ---------- Init ---------- */
+    document.getElementById('invoiceDate').value = new Date().toISOString().split('T')[0];
+
+    document.getElementById('logoInput').addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => { logoData = ev.target.result; render(); };
+        reader.readAsDataURL(file);
+    });
+
+    document.querySelectorAll('.form-panel > .field input, .form-panel > .field select, .form-panel > .field textarea, .form-panel > .row2 input, .form-panel > .row2 select').forEach(el => {
+        el.addEventListener('input', render);
+        el.addEventListener('change', render);
+    });
+
+    addItem();
+    render();
+</script>
+</body>
+</html>
