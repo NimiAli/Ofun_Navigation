@@ -19,7 +19,9 @@
     }
     .field textarea { resize: vertical; min-height: 60px; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #888; margin: 22px 0 10px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+    .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #888; margin: 22px 0 10px; border-bottom: 1px solid #eee; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .save-hint { font-size: 10px; font-weight: 500; text-transform: none; color: #4f46e5; cursor: pointer; }
+    .save-hint:hover { text-decoration: underline; }
 
     .item-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 12px; position: relative; }
     .item-card .remove-item { position: absolute; top: 8px; right: 8px; background: #fee2e2; color: #dc2626; border: none; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; font-size: 14px; }
@@ -60,6 +62,9 @@
     .inv-notes, .inv-cert { font-size: 11px; color: #555; margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee; }
     .inv-foot { font-size: 10px; color: #bbb; text-align: center; margin-top: 20px; }
 
+    /* logo preview */
+    #logoPreview { max-height: 50px; margin-top: 6px; border: 1px solid #e5e7eb; border-radius: 4px; display: none; }
+
     /* notification */
     #notif { position: fixed; bottom: 24px; right: 24px; background: #111827; color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 13px; opacity: 0; transform: translateY(10px); transition: .3s; pointer-events: none; }
     #notif.show { opacity: 1; transform: translateY(0); }
@@ -81,8 +86,12 @@
         </div>
 
         <div class="field">
-            <label>Logo</label>
+            <label style="display:flex;justify-content:space-between;align-items:center;">
+                <span>Logo</span>
+                <span class="save-hint" onclick="clearLogo()">Clear</span>
+            </label>
             <input type="file" id="logoInput" accept="image/*">
+            <img id="logoPreview" alt="Logo preview">
         </div>
 
         <div class="row2">
@@ -103,42 +112,51 @@
         </div>
 
         <!-- FROM -->
-        <div class="section-title">From (Sender)</div>
-        <div class="field"><label>Company</label><input id="fromCompany"></div>
-        <div class="field"><label>Name</label><input id="fromName"></div>
-        <div class="field"><label>Address</label><input id="fromAddress"></div>
-        <div class="row2">
-            <div class="field"><label>City</label><input id="fromCity"></div>
-            <div class="field"><label>ZIP</label><input id="fromZip"></div>
+        <div class="section-title">
+            <span>From (Sender)</span>
+            <span class="save-hint" onclick="clearSaved('from')">Clear saved</span>
         </div>
-        <div class="field"><label>Country</label><input id="fromCountry"></div>
+        <div class="field"><label>Company</label><input id="fromCompany" data-save="from"></div>
+        <div class="field"><label>Name</label><input id="fromName" data-save="from"></div>
+        <div class="field"><label>Address</label><input id="fromAddress" data-save="from"></div>
         <div class="row2">
-            <div class="field"><label>Email</label><input id="fromEmail"></div>
-            <div class="field"><label>Phone</label><input id="fromPhone"></div>
+            <div class="field"><label>City</label><input id="fromCity" data-save="from"></div>
+            <div class="field"><label>ZIP</label><input id="fromZip" data-save="from"></div>
+        </div>
+        <div class="field"><label>Country</label><input id="fromCountry" data-save="from"></div>
+        <div class="row2">
+            <div class="field"><label>Email</label><input id="fromEmail" data-save="from"></div>
+            <div class="field"><label>Phone</label><input id="fromPhone" data-save="from"></div>
         </div>
 
         <!-- RECEIVER -->
-        <div class="section-title">Receiver</div>
-        <div class="field"><label>Company</label><input id="toCompany"></div>
-        <div class="field"><label>Name</label><input id="toName"></div>
-        <div class="field"><label>Address</label><input id="toAddress"></div>
-        <div class="row2">
-            <div class="field"><label>City</label><input id="toCity"></div>
-            <div class="field"><label>ZIP</label><input id="toZip"></div>
+        <div class="section-title">
+            <span>Receiver</span>
+            <span class="save-hint" onclick="clearSaved('to')">Clear saved</span>
         </div>
-        <div class="field"><label>Country</label><input id="toCountry"></div>
+        <div class="field"><label>Company</label><input id="toCompany" data-save="to"></div>
+        <div class="field"><label>Name</label><input id="toName" data-save="to"></div>
+        <div class="field"><label>Address</label><input id="toAddress" data-save="to"></div>
         <div class="row2">
-            <div class="field"><label>Email</label><input id="toEmail"></div>
-            <div class="field"><label>Phone</label><input id="toPhone"></div>
+            <div class="field"><label>City</label><input id="toCity" data-save="to"></div>
+            <div class="field"><label>ZIP</label><input id="toZip" data-save="to"></div>
+        </div>
+        <div class="field"><label>Country</label><input id="toCountry" data-save="to"></div>
+        <div class="row2">
+            <div class="field"><label>Email</label><input id="toEmail" data-save="to"></div>
+            <div class="field"><label>Phone</label><input id="toPhone" data-save="to"></div>
         </div>
 
         <!-- ITEMS -->
-        <div class="section-title">Items</div>
+        <div class="section-title">
+            <span>Items</span>
+            <span class="save-hint" onclick="clearItems()">Clear saved</span>
+        </div>
         <div id="itemsContainer"></div>
         <button class="btn btn-add" onclick="addItem()">+ Add Item</button>
 
         <!-- NOTES -->
-        <div class="section-title">Notes</div>
+        <div class="section-title"><span>Notes</span></div>
         <div class="field"><textarea id="notes" placeholder="Payment terms, bank details, etc."></textarea></div>
 
         <button class="btn btn-primary" onclick="printInvoice()">Print / Save as PDF</button>
@@ -154,16 +172,94 @@
 
 <script>
     let logoData = '';
+    const STORAGE_KEY = 'invoiceState';   // 浏览器本地保存 parties / logo / items
+
+    /* ---------- Product 选项 & Description 模板 ---------- */
+    const PRODUCT_OPTIONS = ['Custom Sticker', 'Custom Card', 'Shipping Cost'];
+    const DESC_TEMPLATES = {
+        'Custom Sticker':
+`Material: PP/PVC/PAPER
+Size: mm/INCHES
+Process: die cut/kiss cut ,glossy/matte finish
+Packaging method: roll / sheet`,
+        'Custom Card':
+`Material: 300gsm/350gsm PAPER
+Size: mm/INCHES
+Process: Double-sided / Single-sided printing ,glossy/matte finish`,
+        'Shipping Cost':
+`SHIPPING BY AIR/SEA`
+    };
+    // 所有模板原文集合，用于判断 Description 是否还是“未编辑的模板”
+    const TEMPLATE_VALUES = new Set(Object.values(DESC_TEMPLATES));
+
+    /* ---------- Persist to localStorage ---------- */
+    function saveState() {
+        const parties = {};
+        document.querySelectorAll('[data-save]').forEach(el => { parties[el.id] = el.value; });
+        const items = [...document.querySelectorAll('.item-card')].map(card => ({
+            product: card.querySelector('.i-product').value,
+            desc: card.querySelector('.i-desc').value,
+            design: card._designData || '',
+            qty: card.querySelector('.i-qty').value,
+            price: card.querySelector('.i-price').value
+        }));
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ parties, logo: logoData, items }));
+        } catch (e) {
+            // 超过浏览器存储上限（图片过大）或 storage 被禁用
+            showNotification('保存失败：数据超出浏览器存储上限（图片过大）');
+        }
+    }
+
+    function readState() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch (e) { return {}; }
+    }
+
+    function clearSaved(group) {
+        document.querySelectorAll(`[data-save="${group}"]`).forEach(el => { el.value = ''; });
+        saveState();
+        render();
+        showNotification(group === 'from' ? 'Sender info cleared' : 'Receiver info cleared');
+    }
+
+    function clearLogo() {
+        logoData = '';
+        document.getElementById('logoInput').value = '';
+        const prev = document.getElementById('logoPreview');
+        prev.src = '';
+        prev.style.display = 'none';
+        saveState();
+        render();
+        showNotification('Logo cleared');
+    }
+
+    function clearItems() {
+        document.getElementById('itemsContainer').innerHTML = '';
+        addItem();          // 留一个空白行
+        saveState();
+        showNotification('Items cleared');
+    }
 
     /* ---------- Items ---------- */
+    function onItemChange() { render(); saveState(); }
+
     function addItem(values = {}) {
         const c = document.getElementById('itemsContainer');
         const card = document.createElement('div');
         card.className = 'item-card';
         card._designData = values.design || '';
+
+        // Product 下拉框：内置选项 + 已保存的自定义值（兼容旧数据）
+        const savedProduct = values.product || '';
+        const optionList = [...PRODUCT_OPTIONS];
+        if (savedProduct && !optionList.includes(savedProduct)) optionList.unshift(savedProduct);
+        const optionsHTML = ['<option value="">— Select —</option>']
+            .concat(optionList.map(o => `<option value="${o}"${o === savedProduct ? ' selected' : ''}>${o}</option>`))
+            .join('');
+
         card.innerHTML = `
-            <button class="remove-item" onclick="this.parentElement.remove(); render();">×</button>
-            <div class="field"><label>Product</label><input class="i-product" value="${values.product || ''}"></div>
+            <button class="remove-item" onclick="this.parentElement.remove(); onItemChange();">×</button>
+            <div class="field"><label>Product</label><select class="i-product">${optionsHTML}</select></div>
             <div class="field"><label>Description</label><textarea class="i-desc">${values.desc || ''}</textarea></div>
             <div class="field">
                 <label>Design (image)</label>
@@ -171,11 +267,23 @@
                 <img class="i-design-preview" style="max-height:50px;margin-top:6px;display:${values.design ? 'block' : 'none'};border:1px solid #e5e7eb;border-radius:4px;" src="${values.design || ''}">
             </div>
             <div class="row2">
-                <div class="field"><label>QTY</label><input type="number" class="i-qty" value="${values.qty || 1}" min="0"></div>
-                <div class="field"><label>Unit Price</label><input type="number" class="i-price" value="${values.price || 0}" min="0" step="0.01"></div>
+                <div class="field"><label>QTY</label><input type="number" class="i-qty" value="${values.qty != null && values.qty !== '' ? values.qty : 1}" min="0"></div>
+                <div class="field"><label>Unit Price</label><input type="number" class="i-price" value="${values.price != null && values.price !== '' ? values.price : 0}" min="0" step="0.01"></div>
             </div>
         `;
-        card.querySelectorAll('input:not(.i-design-file), textarea').forEach(el => el.addEventListener('input', render));
+
+        // Product 选择 → 自动填充 Description（仅当为空或仍是未编辑的模板时）
+        const productSel = card.querySelector('.i-product');
+        const descEl = card.querySelector('.i-desc');
+        productSel.addEventListener('change', () => {
+            const tpl = DESC_TEMPLATES[productSel.value];
+            if (tpl && (descEl.value.trim() === '' || TEMPLATE_VALUES.has(descEl.value))) {
+                descEl.value = tpl;
+            }
+            onItemChange();
+        });
+
+        card.querySelectorAll('input:not(.i-design-file), textarea').forEach(el => el.addEventListener('input', onItemChange));
         card.querySelector('.i-design-file').addEventListener('change', e => {
             const file = e.target.files[0];
             if (!file) return;
@@ -185,7 +293,7 @@
                 const prev = card.querySelector('.i-design-preview');
                 prev.src = ev.target.result;
                 prev.style.display = 'block';
-                render();
+                onItemChange();
             };
             reader.readAsDataURL(file);
         });
@@ -329,7 +437,7 @@ ${d.notes ? `<div class="inv-notes">${d.notes}</div>` : ''}
             .items-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 16px 0; font-size: 10px; }
             .items-table th { background: #f0f0f0; border-bottom: 2px solid #333; padding: 7px 6px; text-align: left; font-weight: 700; word-break: break-word; }
             .items-table th.num, .items-table td.num { text-align: right; }
-            .items-table td { padding: 6px 6px; border-bottom: 1px solid #eee; vertical-align: top; word-break: break-word; overflow-wrap: break-word; }
+            .items-table td { padding: 6px 6px; border-bottom: 1px solid #eee; vertical-align: top; word-break: break-word; overflow-wrap: break-word; white-space: pre-wrap; }
             .items-table img { max-width: 100%; max-height: 48px; object-fit: contain; }
             .totals { display: flex; justify-content: flex-end; margin: 6px 0; font-size: 12px; }
             .totals span:first-child { margin-right: 24px; }
@@ -393,7 +501,14 @@ ${d.notes ? `<div class="inv-notes">${d.notes}</div>` : ''}
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = ev => { logoData = ev.target.result; render(); };
+        reader.onload = ev => {
+            logoData = ev.target.result;
+            const prev = document.getElementById('logoPreview');
+            prev.src = logoData;
+            prev.style.display = 'block';
+            saveState();
+            render();
+        };
         reader.readAsDataURL(file);
     });
 
@@ -402,8 +517,36 @@ ${d.notes ? `<div class="inv-notes">${d.notes}</div>` : ''}
         el.addEventListener('change', render);
     });
 
-    addItem();
-    render();
+    document.querySelectorAll('[data-save]').forEach(el => {
+        el.addEventListener('input', saveState);
+    });
+
+    /* ---------- Restore saved state ---------- */
+    (function restore() {
+        const state = readState();
+
+        if (state.parties) {
+            Object.entries(state.parties).forEach(([id, val]) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            });
+        }
+
+        if (state.logo) {
+            logoData = state.logo;
+            const prev = document.getElementById('logoPreview');
+            prev.src = logoData;
+            prev.style.display = 'block';
+        }
+
+        if (Array.isArray(state.items) && state.items.length) {
+            state.items.forEach(it => addItem(it));
+        } else {
+            addItem();
+        }
+
+        render();
+    })();
 </script>
 </body>
 </html>
