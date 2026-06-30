@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>平张快印价格计算器（全材料·全工艺）</title>
+<style>
+  *{box-sizing:border-box;}
+  body{font-family:"Microsoft YaHei",Arial;margin:0;padding:20px;color:#222;background:#f0f2f5;}
+  .wrap{max-width:1000px;margin:0 auto;}
+  h1{font-size:22px;margin:0 0 6px;}
+  .tip{font-size:12px;color:#666;margin-bottom:16px;line-height:1.6;}
+  .card{background:#fff;border:1px solid #e3e6eb;border-radius:8px;padding:16px;margin-bottom:16px;}
+  .card h2{font-size:16px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #eee;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  label{display:block;font-size:13px;margin:10px 0 4px;color:#333;}
+  .row3 label,.topbar label{margin-top:0;}
+  select,input[type="number"]{width:100%;padding:8px;border:1px solid #ccc;border-radius:5px;font-size:14px;}
+  .checkline{display:flex;align-items:center;gap:6px;margin:6px 0;font-size:14px;}
+  .checkline input{width:auto;}
+  .sub{margin-left:24px;font-size:13px;color:#555;}
+  .sub input,.sub select{width:auto;padding:4px 6px;}
+  .topbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .result h2{font-size:16px;margin:0 0 12px;}
+  .line{display:flex;justify-content:space-between;padding:5px 0;font-size:14px;border-bottom:1px dashed #eee;}
+  .line span:last-child{font-variant-numeric:tabular-nums;}
+  .total{margin-top:12px;padding-top:12px;border-top:2px solid #333;display:flex;justify-content:space-between;font-size:20px;font-weight:bold;color:#c0392b;}
+  .muted{color:#888;font-size:12px;}
+  .hidden{display:none;}
+  .layoutInfo{font-size:13px;color:#0a7d3c;background:#eafaf0;border:1px solid #b8e6c8;border-radius:5px;padding:8px 10px;margin-top:10px;}
+  @media(max-width:700px){.row2,.row3,.topbar{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>平张快印价格计算器</h1>
+  <div class="tip">
+    纸张 480×320mm，可打印面积 470×310mm。1-2张 2元/张；3张以上按价格表，起步价 5元。<br>
+    含全部材料与全部后道工艺，不含会员价。后道按拼数和张数计价。
+  </div>
+
+  <!-- 小张尺寸 → 拼数 -->
+  <div class="card">
+    <h2>① 小张尺寸 → 自动算拼数</h2>
+    <div class="row3">
+      <div>
+        <label>小张宽 W（mm）</label>
+        <input id="pieceW" type="number" value="90" min="1" step="0.1">
+      </div>
+      <div>
+        <label>小张高 H（mm）</label>
+        <input id="pieceH" type="number" value="54" min="1" step="0.1">
+      </div>
+      <div>
+        <label>出血位 / 间距（mm）</label>
+        <input id="gap" type="number" value="2" min="0" step="0.5">
+      </div>
+    </div>
+    <div class="layoutInfo" id="layoutInfo"></div>
+    <div class="muted" style="margin-top:6px">
+      可打印区按 470×310mm 计算，取横排/竖排中拼数更多的方案。拼数会自动填入下方，也可手动修改。
+    </div>
+  </div>
+
+  <!-- 拼数 + 张数 -->
+  <div class="card">
+    <h2>② 拼数 / 张数</h2>
+    <div class="topbar">
+      <div>
+        <label>拼数（每张排版个数，自动/可改）</label>
+        <input id="impo" type="number" value="30" min="1">
+      </div>
+      <div>
+        <label>张数（印刷张数）</label>
+        <input id="qty" type="number" value="100" min="1">
+      </div>
+      <div>
+        <label>成品总数 = 拼数 × 张数</label>
+        <input id="totalPcs" type="number" value="" readonly style="background:#f5f5f5">
+      </div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <!-- 印刷 -->
+    <div class="card" style="margin-bottom:0">
+      <h2>③ 印刷</h2>
+      <label>材料 / 纸张（彩色价含材料，元/张）</label>
+      <select id="material"></select>
+
+      <label>印刷面</label>
+      <select id="sides">
+        <option value="single">单面</option>
+        <option value="double">双面（+0.5元/张）</option>
+      </select>
+
+      <label>画面类型</label>
+      <select id="content">
+        <option value="normal">普通</option>
+        <option value="blacktext">单黑文字（-0.1元/张）</option>
+        <option value="full">满版（+0.05元/张）</option>
+        <option value="solid">多色实地（+0.2元/张）</option>
+      </select>
+
+      <div class="checkline">
+        <input type="checkbox" id="ownMat">
+        <label for="ownMat" style="margin:0">自带材料（0.5元/面，替代材料价）</label>
+      </div>
+    </div>
+
+    <!-- 后道 -->
+    <div class="card" style="margin-bottom:0">
+      <h2>④ 后道工艺（按拼数 / 张数计价）</h2>
+
+      <label>覆膜</label>
+      <select id="laminate">
+        <option value="none">不覆膜</option>
+        <option value="dry">干膜</option>
+        <option value="cold">冷裱</option>
+      </select>
+
+      <label>模切 / 划线</label>
+      <select id="diecut">
+        <option value="none">无</option>
+        <option value="score">不干胶划线（刀模）</option>
+        <option value="adhDigital">不干胶数码模切（按拼数）</option>
+        <option value="paperDigital">纸张数码模切</option>
+      </select>
+
+      <div id="scoreBox" class="sub hidden">
+        <label>刀数</label>
+        <select id="knife">
+          <option value="single">单刀</option>
+          <option value="double">双刀</option>
+        </select>
+      </div>
+
+      <label>数码增效</label>
+      <div class="checkline"><input type="checkbox" id="uv"><label for="uv" style="margin:0">UV增高（20元/款起，5元/张，50张以上3元/张）</label></div>
+      <div class="checkline"><input type="checkbox" id="foil"><label for="foil" style="margin:0">数码烫金（30元/款起，8元/张，80张以上5元/张）</label></div>
+
+      <label>其他后道（各10元起，200张以上每100张+5元）</label>
+      <div class="checkline"><input type="checkbox" id="slit"><label for="slit" style="margin:0">纸卡分切</label></div>
+      <div class="checkline"><input type="checkbox" id="round"><label for="round" style="margin:0">圆角</label></div>
+      <div class="checkline"><input type="checkbox" id="hole"><label for="hole" style="margin:0">打孔</label></div>
+    </div>
+  </div>
+
+  <div class="card result" style="margin-top:16px;margin-bottom:0">
+    <h2>价格明细</h2>
+    <div id="breakdown"></div>
+    <div class="total"><span>合计</span><span id="grandTotal">¥0.00</span></div>
+    <div class="muted" style="margin-top:10px">
+      提示：膜类不干胶/刀线较密、拼版复杂、规格较小等情况价目表注明"需适当加价"，本工具未自动计入，请按实际酌情加价。
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== 可编辑：可打印区 ===================== */
+const PRINT_W = 470, PRINT_H = 310; // mm
+
+/* ===================== 材料配置 ===================== */
+const MATERIALS = [
+  {g:'纸类不干胶', name:'普通黄底热胶（需指定）', price:0.55},
+  {g:'纸类不干胶', name:'丰华普通水胶（默认材料）', price:0.60},
+  {g:'纸类不干胶', name:'书写纸不干胶（丰华）', price:0.75},
+  {g:'纸类不干胶', name:'牛皮纸不干胶（丰华）', price:0.75},
+  {g:'纸类不干胶', name:'80g铜版纸（丰华黄底/普通白底）', price:0.75},
+  {g:'纸类不干胶', name:'128g/157g铜版纸不干胶', price:0.80},
+  {g:'纸类不干胶', name:'丰华水胶加胶', price:0.80},
+  {g:'纸类不干胶', name:'丰华热胶', price:0.80},
+  {g:'纸类不干胶', name:'丰华可移玻璃卡', price:1.00},
+  {g:'膜类不干胶', name:'2.5丝透明（需覆膜）', price:0.80},
+  {g:'膜类不干胶', name:'5丝合成纸/珠光膜/亚银/亮银/镭射银/亮金/透明/8丝乳白PVC', price:1.10},
+  {g:'膜类不干胶', name:'油胶合成 / 油胶亚银', price:1.20},
+  {g:'常用纸张', name:'铜版纸157g/200g/210白卡', price:0.60},
+  {g:'常用纸张', name:'250g白卡纸 / 250g铜版纸', price:0.65},
+  {g:'常用纸张', name:'300g白卡纸/铜版纸/灰底白300g', price:0.70},
+  {g:'常用纸张', name:'350g铜版纸', price:1.00},
+  {g:'其他', name:'水洗标无纺布', price:1.30}
+];
+
+/* ===================== 拼数计算 ===================== */
+function calcImposition(W, H, w, h, g){
+  if(w<=0 || h<=0) return {n:0, cols:0, rows:0, rotated:false};
+  // 间距 g：n个并排总长 = n*w + (n-1)*g  =>  n = floor((L+g)/(w+g))
+  const fit = (L, s) => Math.max(0, Math.floor((L + g) / (s + g)));
+  // 方案A：宽沿470，高沿310
+  const colsA = fit(W, w), rowsA = fit(H, h);
+  const a = colsA * rowsA;
+  // 方案B：旋转小张90°
+  const colsB = fit(W, h), rowsB = fit(H, w);
+  const b = colsB * rowsB;
+  if(b > a) return {n:b, cols:colsB, rows:rowsB, rotated:true};
+  return {n:a, cols:colsA, rows:rowsA, rotated:false};
+}
+
+/* ===================== 后道计费规则 ===================== */
+function laminateDry(qty){
+  if(qty < 10) return {total:qty*1.0, note:`${qty}张 × 1元/张`};
+  if(qty <= 50) return {total:10, note:`10-50张 整单10元`};
+  if(qty <= 150) return {total:15, note:`50-150张 整单15元`};
+  return {total:qty*0.1, note:`${qty}张 × 0.1元/张`};
+}
+function laminateCold(qty){
+  if(qty <= 10) return {total:qty*1.0, note:`${qty}张 × 1元/张`};
+  return {total:qty*0.2, note:`${qty}张 × 0.2元/张`};
+}
+function scoreCut(qty, dbl){
+  let t;
+  if(qty <= 50) t = dbl?15:10;
+  else t = dbl?20:15;
+  return {total:t, note:`${qty>50?'50张以上':'50张以内'} ${dbl?'双刀':'单刀'} ${t}元`};
+}
+function adhesiveDieCutPer(P, N){
+  if(P <= 30) return 0.4;
+  if(P <= 50) return N>=100 ? 0.4 : 0.5;
+  if(P <= 60){ if(N>=150)return 0.4; if(N>=100)return 0.5; return 0.6; }
+  if(P <= 70){ if(N>=200)return 0.4; if(N>=150)return 0.5; if(N>=100)return 0.6; return 0.7; }
+  if(P <= 80){ if(N>=200)return 0.5; if(N>=150)return 0.6; if(N>=100)return 0.7; return 0.8; }
+  if(P <= 100){ if(N>=250)return 0.5; if(N>=200)return 0.6; if(N>=150)return 0.7; if(N>=100)return 0.8; return 0.9; }
+  if(P <= 200){ if(N>=300)return 0.5; if(N>=250)return 0.6; if(N>=200)return 0.7; if(N>=150)return 0.8; if(N>=100)return 0.9; return 1.0; }
+  return 1.0 + Math.ceil((P-200)/100)*0.5;
+}
+function adhesiveDieCut(qty, P){
+  const per = adhesiveDieCutPer(P, qty);
+  let t = per * qty;
+  if(t < 10) t = 10;
+  return {total:t, note:`${P}拼 × ${per}元/张 × ${qty}张${t===10?'（起步价10元）':''}`};
+}
+function paperDieCut(qty){
+  let per;
+  if(qty <= 6) per = 3.0;
+  else if(qty <= 30) per = 2.0;
+  else if(qty <= 100) per = 1.0;
+  else if(qty <= 200) per = 0.8;
+  else per = 0.6;
+  let t = per * qty;
+  if(t < 10) t = 10;
+  return {total:t, note:`${per}元/张 × ${qty}张${t===10?'（起步价10元）':''}`};
+}
+function uvBoost(qty){
+  const per = qty > 50 ? 3.0 : 5.0;
+  let t = per * qty;
+  if(t < 20) t = 20;
+  return {total:t, note:`${per}元/张 × ${qty}张${t===20?'（起步20元/款）':''}`};
+}
+function foilStamp(qty){
+  const per = qty > 80 ? 5.0 : 8.0;
+  let t = per * qty;
+  if(t < 30) t = 30;
+  return {total:t, note:`${per}元/张 × ${qty}张${t===30?'（起步30元/款）':''}`};
+}
+function extraProc(qty, name){
+  let t = 10;
+  if(qty > 200) t += Math.ceil((qty-200)/100)*5;
+  return {total:t, note:`${name} ${t}元`};
+}
+
+/* ===================== 初始化 ===================== */
+const $ = id => document.getElementById(id);
+const matSel = $('material');
+let lastGroup = '';
+MATERIALS.forEach((m,i)=>{
+  if(m.g !== lastGroup){
+    const og = document.createElement('optgroup');
+    og.label = m.g;
+    matSel.appendChild(og);
+    lastGroup = m.g;
+  }
+  const opt = document.createElement('option');
+  opt.value = i;
+  opt.textContent = `${m.name} — ${m.price.toFixed(2)}元/张`;
+  matSel.lastChild.appendChild(opt);
+});
+
+function toggleSub(){
+  $('scoreBox').classList.toggle('hidden', $('diecut').value!=='score');
+}
+
+/* 小张尺寸变化 → 重算拼数并填入 */
+function updateImposition(){
+  const w = parseFloat($('pieceW').value)||0;
+  const h = parseFloat($('pieceH').value)||0;
+  const g = Math.max(0, parseFloat($('gap').value)||0);
+  const r = calcImposition(PRINT_W, PRINT_H, w, h, g);
+  if(r.n > 0){
+    $('impo').value = r.n;
+    $('layoutInfo').textContent =
+      `排版：${r.cols} 列 × ${r.rows} 行 = ${r.n} 拼${r.rotated?'（小张旋转90°）':''}，间距 ${g}mm，可打印区 ${PRINT_W}×${PRINT_H}mm`;
+  } else {
+    $('layoutInfo').textContent = '小张尺寸超过可打印区，无法排版';
+  }
+}
+
+/* ===================== 计算 ===================== */
+function calc(){
+  const P = Math.max(1, parseInt($('impo').value)||1);
+  const qty = Math.max(1, parseInt($('qty').value)||1);
+  $('totalPcs').value = P * qty;
+
+  const mat = MATERIALS[parseInt(matSel.value)] || MATERIALS[0];
+  const sides = $('sides').value;
+  const content = $('content').value;
+  const ownMat = $('ownMat').checked;
+  const faces = sides==='double' ? 2 : 1;
+
+  const rows = [];
+
+  let perSheet = ownMat ? 0.5*faces : mat.price;
+  let contentLabel = '';
+  if(content==='blacktext'){ perSheet-=0.1; contentLabel='单黑文字 -0.1'; }
+  else if(content==='full'){ perSheet+=0.05; contentLabel='满版 +0.05'; }
+  else if(content==='solid'){ perSheet+=0.2; contentLabel='多色实地 +0.2'; }
+  if(sides==='double' && !ownMat) perSheet += 0.5;
+
+  let printTotal, printNote;
+  if(qty <= 2){
+    let p = 2.0 + (sides==='double'?0.5:0);
+    printTotal = p*qty;
+    printNote = `1-2张 ${p}元/张 × ${qty}张`;
+  } else {
+    printTotal = perSheet*qty;
+    let floored=false;
+    if(printTotal<5){ printTotal=5; floored=true; }
+    printNote = `${perSheet.toFixed(2)}元/张 × ${qty}张${floored?'（起步价5元）':''}`;
+  }
+  rows.push(['印刷（'+mat.name+(ownMat?' / 自带材料':'')+(contentLabel?' / '+contentLabel:'')+(sides==='double'?' / 双面':'')+'）', printNote, printTotal]);
+
+  const lam = $('laminate').value;
+  if(lam==='dry'){ const r=laminateDry(qty); rows.push(['覆膜·干膜', r.note, r.total]); }
+  else if(lam==='cold'){ const r=laminateCold(qty); rows.push(['覆膜·冷裱', r.note, r.total]); }
+
+  const d = $('diecut').value;
+  if(d==='score'){ const r=scoreCut(qty,$('knife').value==='double'); rows.push(['不干胶划线', r.note, r.total]); }
+  else if(d==='adhDigital'){ const r=adhesiveDieCut(qty,P); rows.push(['不干胶数码模切', r.note, r.total]); }
+  else if(d==='paperDigital'){ const r=paperDieCut(qty); rows.push(['纸张数码模切', r.note, r.total]); }
+
+  if($('uv').checked){ const r=uvBoost(qty); rows.push(['UV增高', r.note, r.total]); }
+  if($('foil').checked){ const r=foilStamp(qty); rows.push(['数码烫金', r.note, r.total]); }
+
+  if($('slit').checked){ const r=extraProc(qty,'纸卡分切'); rows.push(['纸卡分切', r.note, r.total]); }
+  if($('round').checked){ const r=extraProc(qty,'圆角'); rows.push(['圆角', r.note, r.total]); }
+  if($('hole').checked){ const r=extraProc(qty,'打孔'); rows.push(['打孔', r.note, r.total]); }
+
+  let grand=0;
+  $('breakdown').innerHTML = rows.map(([t,n,a])=>{
+    grand+=a;
+    return `<div class="line"><span>${t}<br><span class="muted">${n}</span></span><span>¥${a.toFixed(2)}</span></div>`;
+  }).join('');
+  $('grandTotal').textContent = '¥'+grand.toFixed(2);
+}
+
+/* 事件绑定 */
+['pieceW','pieceH','gap'].forEach(id=>{
+  $(id).addEventListener('input', ()=>{ updateImposition(); calc(); });
+});
+document.querySelectorAll('input,select').forEach(el=>{
+  if(['pieceW','pieceH','gap'].includes(el.id)) return;
+  el.addEventListener('input', ()=>{ toggleSub(); calc(); });
+  el.addEventListener('change', ()=>{ toggleSub(); calc(); });
+});
+
+toggleSub();
+updateImposition();
+calc();
+</script>
+</body>
+</html>
